@@ -27,6 +27,7 @@ import socket
 import struct
 import threading
 import logging
+import time
 
 interfaces = [
     # L3VPN (Wireguard) area
@@ -70,15 +71,17 @@ class SSDPAgency(threading.Thread):
                 sock.sendto(self._data[0], (ip, self._port))
                 self._logger.debug('SSDPAgency - SEND: ({}, {}), {}'.format(ip, self._port, self._data[0]))
 
-            try:
-                recieve = sock.recvfrom(self._buffer_size)
-                self._logger.debug('SSDPAgency - RECV: ({}, {}), {}'.format(recieve[1][0], recieve[1][1], recieve[0]))
+            end_time = time.time() + self._timeout
+            while time.time() < end_time:
+                try:
+                    recieve = sock.recvfrom(self._buffer_size)
+                    self._logger.debug('SSDPAgency - RECV: ({}, {}), {}'.format(recieve[1][0], recieve[1][1], recieve[0]))
 
-                sock.sendto(recieve[0], (self._data[1][0], self._port))
-                self._logger.debug('SSDPAgency - SEND: ({}, {}), {}'.format(self._data[1][0], self._port, recieve[0]))
-            except socket.timeout:
-                pass
-        
+                    sock.sendto(recieve[0], (self._data[1][0], self._port))
+                    self._logger.debug('SSDPAgency - SEND: ({}, {}), {}'.format(self._data[1][0], self._port, recieve[0]))
+                except socket.timeout:
+                    pass
+
 
 class SSDPProxy:
     def __init__(self, interfaces, port=1900, multicast='239.255.255.250', timeout=5, buffer_size=4096):
