@@ -1,0 +1,142 @@
+
+# MIT License
+# 
+# Copyright (c) 2025 kitune-san
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+import ipaddress
+import netifaces
+import socket
+import struct
+import threading
+import logging
+
+interfaces = [
+    # L3VPN (Wireguard) area
+    {
+        'ip': netifaces.ifaddresses('wg0')[netifaces.AF_INET][0]['addr'],
+        'mask': '255.0.0.0',
+        'forwardto': ['10.0.0.1']           # another SSDP proxy in L3VPN network
+    },
+
+    # Local area
+    {
+        'ip': netifaces.ifaddresses('enx3897a43740cb')[netifaces.AF_INET][0]['addr'],
+        'mask': netifaces.ifaddresses('enx3897a43740cb')[netifaces.AF_INET][0]['netmask'],
+        'forwardto': ['239.255.255.250']    # multicast address
+    }
+]
+
+class SSDPAgency(threading.Thread):
+    def __init__(self, ip, forwardto, data, port=1900, timeout=5, buffer_size=4096):
+        super(SSDPAgency, self).__init__()
+        self._ip            = ip
+        self._forwardto     = forwardto
+        self._data          = data
+        self._port          = port
+        self._timeout       = timeout
+        self._buffer_size   = buffer_size
+
+        self._logger = logging.getLogger(__name__)
+        self._logger.addHandler(logging.NullHandler())
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.propagate = True
+
+    def run(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, struct.pack('b', 1))
+            sock.bind((self._ip, self._port))
+            sock.settimeout(self._timeout)
+
+            for ip in self._forwardto:
+                sock.sendto(self._data[0], (ip, self._port))
+                self._logger.debug('SSDPAgency - SEND: ({}, {}), {}'.format(ip, self._port, self._data[0]))
+
+            try:
+                recieve = sock.recvfrom(self._buffer_size)
+                self._logger.debug('SSDPAgency - RECV: ({}, {}), {}'.format(recieve[1][0], recieve[1][1], recieve[0]))
+
+                sock.sendto(recieve[0], (self._data[1][0], self._port))
+                self._logger.debug('SSDPAgency - SEND: ({}, {}), {}'.format(self._data[1][0], self._port, recieve[0]))
+            except socket.timeout:
+                pass
+        
+
+class SSDPProxy:
+    def __init__(self, interfaces, port=1900, multicast='239.255.255.250', timeout=5, buffer_size=4096):
+        self._interfaces    = interfaces
+        self._port          = port
+        self._multicast     = multicast
+        self._timeout       = timeout
+        self._buffer_size   = buffer_size
+
+        self._logger = logging.getLogger(__name__)
+        self._logger.addHandler(logging.NullHandler())
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.propagate = True
+
+    def start(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind(('', self._port))
+            for interface in self._interfaces:
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(self._multicast) + socket.inet_aton(interface['ip']))
+            sock.settimeout(self._timeout)
+
+            while True:
+                try:
+                    recieve = sock.recvfrom(self._buffer_size)
+
+                    local_network   = False
+                    same_address    = False
+                    agencies = []
+                    for interface in self._interfaces:
+                        net1 = ipaddress.IPv4Network((interface['ip'], '255.255.255.255'), strict=False)
+                        net2 = ipaddress.IPv4Network((recieve[1][0], '255.255.255.255'), strict=False)
+                        if net1.network_address == net2.network_address:
+                            same_address = True
+                            break
+
+                        net1 = ipaddress.IPv4Network((interface['ip'], interface['mask']), strict=False)
+                        net2 = ipaddress.IPv4Network((recieve[1][0], interface['mask']), strict=False)
+                        if net1.network_address == net2.network_address:
+                            local_network = True
+                        else:
+                           agencies.append(SSDPAgency(interface['ip'], interface['forwardto'], recieve))
+
+                    if local_network is True and same_address is False:
+                        self._logger.debug('RECV: ({}, {}) {}'.format(recieve[1][0], recieve[1][1], recieve[0]))
+
+                        for agency in agencies:
+                            agency.start()
+
+                except socket.timeout:
+                    pass
+
+if __name__ == '__main__':
+    logger  = logging.getLogger()
+    handler = logging.StreamHandler()
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+
+    ssdp_repeater = SSDPProxy(interfaces)
+    ssdp_repeater.start()
+
