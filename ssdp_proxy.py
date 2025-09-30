@@ -81,16 +81,16 @@ class SSDPAgency(threading.Thread):
             for ip in self._forwardto:
                 if request_address != ipaddress.IPv4Network(ip, strict=False):
                     sock.sendto(self._data[0], (ip, self._port))
-                    self._logger.debug('SSDPAgency - SEND: ({}, {}), {}'.format(ip, self._port, self._data[0]))
+                    self._logger.debug('SSDPAgency - SEND: {} -> ({}, {}): {}'.format(self._ip, ip, self._port, self._data[0]))
 
             end_time = time.time() + self._timeout
             while time.time() < end_time:
                 try:
                     recieve = sock.recvfrom(self._buffer_size)
-                    self._logger.debug('SSDPAgency - RECV: ({}, {}), {}'.format(recieve[1][0], recieve[1][1], recieve[0]))
+                    self._logger.debug('SSDPAgency - RECV: ({}, {}) -> {}: {}'.format(recieve[1][0], recieve[1][1], self._ip, recieve[0]))
 
                     sock.sendto(recieve[0], (self._data[1][0], self._port))
-                    self._logger.debug('SSDPAgency - SEND: ({}, {}), {}'.format(self._data[1][0], self._port, recieve[0]))
+                    self._logger.debug('SSDPAgency - SEND: {} -> ({}, {}): {}'.format(self._ip, self._data[1][0], self._port, recieve[0]))
                 except socket.timeout:
                     pass
 
