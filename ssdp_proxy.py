@@ -92,10 +92,13 @@ class SSDPAgency(threading.Thread):
                 while time.time() < end_time:
                     try:
                         recieve = sock.recvfrom(self._buffer_size)
-                        self._logger.debug('SSDPAgency - RECV: ({}, {}) -> {}: {}'.format(recieve[1][0], recieve[1][1], self._ip, recieve[0]))
+                        if recieve[0].startswith(b'M-SEARCH'):
+                            self._logger.debug('SSDPAgency - RECV(LOST): ({}, {}) -> {}: {}'.format(recieve[1][0], recieve[1][1], self._ip, recieve[0]))
+                        else:
+                            self._logger.debug('SSDPAgency - RECV: ({}, {}) -> {}: {}'.format(recieve[1][0], recieve[1][1], self._ip, recieve[0]))
 
-                        sock.sendto(recieve[0], (self._data[1][0], self._port))
-                        self._logger.debug('SSDPAgency - SEND: {} -> ({}, {}): {}'.format(self._ip, self._data[1][0], self._port, recieve[0]))
+                            sock.sendto(recieve[0], (self._data[1][0], self._port))
+                            self._logger.debug('SSDPAgency - SEND: {} -> ({}, {}): {}'.format(self._ip, self._data[1][0], self._port, recieve[0]))
                     except socket.timeout:
                         pass
 
