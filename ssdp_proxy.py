@@ -142,7 +142,8 @@ class SSDPProxy:
                             add_agency = True
 
                         if add_agency is True:
-                           agencies.append(SSDPAgency(interface['ip'], interface['forwardto'], recieve))
+                           agencies.append(SSDPAgency(ip=interface['ip'], forwardto=interface['forwardto'], data=recieve,
+                                                      port=self._port, timeout=self._timeout, buffer_size=self._buffer_size))
 
                     if local_network is True and same_address is False:
                         self._logger.debug('RECV: ({}, {}) {}'.format(recieve[1][0], recieve[1][1], recieve[0]))
