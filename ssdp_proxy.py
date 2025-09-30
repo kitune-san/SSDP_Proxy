@@ -70,6 +70,10 @@ class SSDPAgency(threading.Thread):
         self._logger.propagate = True
 
     def run(self):
+        msearch = False
+        if self._data[0].startswith(b'M-SEARCH'):
+            msearch = True
+
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, struct.pack('b', 1))
@@ -83,16 +87,17 @@ class SSDPAgency(threading.Thread):
                     sock.sendto(self._data[0], (ip, self._port))
                     self._logger.debug('SSDPAgency - SEND: {} -> ({}, {}): {}'.format(self._ip, ip, self._port, self._data[0]))
 
-            end_time = time.time() + self._timeout
-            while time.time() < end_time:
-                try:
-                    recieve = sock.recvfrom(self._buffer_size)
-                    self._logger.debug('SSDPAgency - RECV: ({}, {}) -> {}: {}'.format(recieve[1][0], recieve[1][1], self._ip, recieve[0]))
+            if msearch:
+                end_time = time.time() + self._timeout
+                while time.time() < end_time:
+                    try:
+                        recieve = sock.recvfrom(self._buffer_size)
+                        self._logger.debug('SSDPAgency - RECV: ({}, {}) -> {}: {}'.format(recieve[1][0], recieve[1][1], self._ip, recieve[0]))
 
-                    sock.sendto(recieve[0], (self._data[1][0], self._port))
-                    self._logger.debug('SSDPAgency - SEND: {} -> ({}, {}): {}'.format(self._ip, self._data[1][0], self._port, recieve[0]))
-                except socket.timeout:
-                    pass
+                        sock.sendto(recieve[0], (self._data[1][0], self._port))
+                        self._logger.debug('SSDPAgency - SEND: {} -> ({}, {}): {}'.format(self._ip, self._data[1][0], self._port, recieve[0]))
+                    except socket.timeout:
+                        pass
 
 
 class SSDPProxy:
