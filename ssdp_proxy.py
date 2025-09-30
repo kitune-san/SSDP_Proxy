@@ -44,7 +44,14 @@ interfaces = [
         'mask': netifaces.ifaddresses('enx3897a43740cb')[netifaces.AF_INET][0]['netmask'],
         'forwardto': ['239.255.255.250'],   # multicast address
         'reverse': False
+    },
+    {
+        'ip': netifaces.ifaddresses('lo')[netifaces.AF_INET][0]['addr'],
+        'mask': netifaces.ifaddresses('lo')[netifaces.AF_INET][0]['netmask'],
+        'forwardto': ['239.255.255.250'],   # multicast address
+        'reverse': False
     }
+
 ]
 
 class SSDPAgency(threading.Thread):
