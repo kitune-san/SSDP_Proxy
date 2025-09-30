@@ -6,9 +6,9 @@ SSDP Proxy for L3VPN(Wireguard) [EXPERIMENTAL]
 ### Pattern 1 - End-to-End
 
 ```
-[10.0.0.1]------(VPN)-------[10.0.0.2]
-                  |
-                  +---------[10.0.0.3]
+[Local area]---(eth0)[10.0.0.1](wg0)------(VPN)-------(wg0)[10.0.0.2](eth0)---[Local area]
+                                            |
+                                            +---------(wg0)[10.0.0.3](eth0)---[Local area]
 ```
 
 
@@ -102,9 +102,9 @@ interfaces = [
 ### Pattern 2 - Reverse Proxy
 
 ```
-[10.0.0.1] (reverse)------(VPN)-------[10.0.0.2] (client)
-                            |
-                            +---------[10.0.0.3] (client)
+[10.0.0.1 (reverse)](wg0)------(VPN)-------(wg0)[10.0.0.2 (client)](eth0)---[Local area]
+                                 |
+                                 +---------(wg0)[10.0.0.3 (client)](eth0)---[Local area]
 ```
 
 ```python
