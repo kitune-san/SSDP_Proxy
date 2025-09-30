@@ -27,7 +27,7 @@ interfaces = [
     # Local area
     {
         'ip': netifaces.ifaddresses('eth0')[netifaces.AF_INET][0]['addr'],
-        'mask': netifaces.ifaddresses('enx3897a43740cb')[netifaces.AF_INET][0]['netmask'],
+        'mask': netifaces.ifaddresses('eth0')[netifaces.AF_INET][0]['netmask'],
         'forwardto': ['239.255.255.250'],   # multicast address
         'reverse': False
     },
@@ -57,7 +57,7 @@ interfaces = [
     # Local area
     {
         'ip': netifaces.ifaddresses('eth0')[netifaces.AF_INET][0]['addr'],
-        'mask': netifaces.ifaddresses('enx3897a43740cb')[netifaces.AF_INET][0]['netmask'],
+        'mask': netifaces.ifaddresses('eth0')[netifaces.AF_INET][0]['netmask'],
         'forwardto': ['239.255.255.250'],   # multicast address
         'reverse': False
     },
@@ -86,7 +86,7 @@ interfaces = [
     # Local area
     {
         'ip': netifaces.ifaddresses('eth0')[netifaces.AF_INET][0]['addr'],
-        'mask': netifaces.ifaddresses('enx3897a43740cb')[netifaces.AF_INET][0]['netmask'],
+        'mask': netifaces.ifaddresses('eth0')[netifaces.AF_INET][0]['netmask'],
         'forwardto': ['239.255.255.250'],   # multicast address
         'reverse': False
     },
@@ -136,7 +136,7 @@ interfaces = [
     # Local area
     {
         'ip': netifaces.ifaddresses('eth0')[netifaces.AF_INET][0]['addr'],
-        'mask': netifaces.ifaddresses('enx3897a43740cb')[netifaces.AF_INET][0]['netmask'],
+        'mask': netifaces.ifaddresses('eth0')[netifaces.AF_INET][0]['netmask'],
         'forwardto': ['239.255.255.250'],   # multicast address
         'reverse': False
     },
@@ -165,7 +165,7 @@ interfaces = [
     # Local area
     {
         'ip': netifaces.ifaddresses('eth0')[netifaces.AF_INET][0]['addr'],
-        'mask': netifaces.ifaddresses('enx3897a43740cb')[netifaces.AF_INET][0]['netmask'],
+        'mask': netifaces.ifaddresses('eth0')[netifaces.AF_INET][0]['netmask'],
         'forwardto': ['239.255.255.250'],   # multicast address
         'reverse': False
     },
