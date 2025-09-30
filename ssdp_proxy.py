@@ -34,14 +34,16 @@ interfaces = [
     {
         'ip': netifaces.ifaddresses('wg0')[netifaces.AF_INET][0]['addr'],
         'mask': '255.0.0.0',
-        'forwardto': ['10.0.0.1']           # another SSDP proxy in L3VPN network
+        'forwardto': ['10.0.0.1'],          # another SSDP proxy in L3VPN network
+        'reverse': False
     },
 
     # Local area
     {
         'ip': netifaces.ifaddresses('enx3897a43740cb')[netifaces.AF_INET][0]['addr'],
         'mask': netifaces.ifaddresses('enx3897a43740cb')[netifaces.AF_INET][0]['netmask'],
-        'forwardto': ['239.255.255.250']    # multicast address
+        'forwardto': ['239.255.255.250'],   # multicast address
+        'reverse': False
     }
 ]
 
@@ -67,9 +69,12 @@ class SSDPAgency(threading.Thread):
             sock.bind((self._ip, self._port))
             sock.settimeout(self._timeout)
 
+            request_address = ipaddress.IPv4Network(self._data[1][0], strict=False)
+
             for ip in self._forwardto:
-                sock.sendto(self._data[0], (ip, self._port))
-                self._logger.debug('SSDPAgency - SEND: ({}, {}), {}'.format(ip, self._port, self._data[0]))
+                if request_address != ipaddress.IPv4Network(ip, strict=False):
+                    sock.sendto(self._data[0], (ip, self._port))
+                    self._logger.debug('SSDPAgency - SEND: ({}, {}), {}'.format(ip, self._port, self._data[0]))
 
             end_time = time.time() + self._timeout
             while time.time() < end_time:
@@ -120,9 +125,16 @@ class SSDPProxy:
 
                         net1 = ipaddress.IPv4Network((interface['ip'], interface['mask']), strict=False)
                         net2 = ipaddress.IPv4Network((recieve[1][0], interface['mask']), strict=False)
+
+                        add_agency = False
                         if net1.network_address == net2.network_address:
                             local_network = True
+                            if interface['reverse'] is True:
+                                add_agency = True
                         else:
+                            add_agency = True
+
+                        if add_agency is True:
                            agencies.append(SSDPAgency(interface['ip'], interface['forwardto'], recieve))
 
                     if local_network is True and same_address is False:
