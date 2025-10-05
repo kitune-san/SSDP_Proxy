@@ -6,9 +6,9 @@ SSDP Proxy for L3VPN(Wireguard) [EXPERIMENTAL]
 ### Pattern 1 - End-to-End
 
 ```
-[Local area]---(eth0)[10.0.0.1](wg0)------(VPN)-------(wg0)[10.0.0.2](eth0)---[Local area]
+[Local area]---(eth0)(wg0:10.0.0.1)-------(VPN)-------(wg0:10.0.0.2)(eth0)---[Local area]
                                             |
-                                            +---------(wg0)[10.0.0.3](eth0)---[Local area]
+                                            +---------(wg0:10.0.0.3)(eth0)---[Local area]
 ```
 
 
@@ -102,9 +102,9 @@ interfaces = [
 ### Pattern 2 - Reverse Proxy
 
 ```
-[10.0.0.1 (reverse)](wg0)------(VPN)-------(wg0)[10.0.0.2 (client)](eth0)---[Local area]
-                                 |
-                                 +---------(wg0)[10.0.0.3 (client)](eth0)---[Local area]
+(wg0:10.0.0.1 (reverse))------(VPN)-------(wg0:10.0.0.2 (client))(eth0)---[Local area]
+                                |
+                                +---------(wg0:10.0.0.3 (client))(eth0)---[Local area]
 ```
 
 ```python
@@ -181,3 +181,5 @@ interfaces = [
 ## Known issue
 
 - A response may be mistakenly forwarded and not returned when proxying MSEARCH requests while waiting for other SSDP response.
+- Data sent from localhost is ignored.
+
