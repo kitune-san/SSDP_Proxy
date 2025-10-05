@@ -1,0 +1,11 @@
+[Unit]
+Description=SSDP Proxy for L3VPN
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ssdp_proxy/
+ExecStart=/usr/bin/python3 /opt/ssdp_proxy/ssdp_proxy.py
+
+[Install]
+WantedBy=multi-user.target
